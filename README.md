@@ -39,8 +39,10 @@ Server non-blocking menggunakan I/O multiplexing bisa melayani banyak client sek
 dari test berikut dapat dilihat bahwa server hanya memberikan response kepada 1 client saja, sementara client yang mencoba connect, tidak bisa karena blocking dari server. Bahkan mencoba /list saja tidak bisa. Dengan ini, maka sesuai dengan implementasi sync yaitu blocking
 
 ### Server Select
-![select](/assets/selectNew.png)
+![select](/assets/select.png)
 
 dari test berikut dapat dilihat bahwa client 1 dan 2 dapat connect ke server dan setiap requestnya dapat diproses secara synchronous. Namun, delay nya tidak terasa karena request yang dilakukan sederhana dan terjadi di local sehingga sangat cepat.
 
-Dapat dilihat juga server broadcast bahwa client telah meng-upload sebuah file. Namun disini tidak menggunakan threading sehingga broadcast diterima setelah command selanjutnya dari client 1. Hal ini karena jika menggunakan threading di client akan terjadi race condition yang dimana 2 thread di 1 socket yang ujungnya akan deadlock
+Dapat dilihat juga server broadcast ke semua client lain ketika ada file yang di-upload. Client menggunakan background thread untuk menerima broadcast, namun untuk menghindari race condition, digunakan `threading.Event` (`command_active`) broadcast thread di-pause saat main thread sedang mengeksekusi command, lalu diaktifkan kembali setelah selesai.
+
+Untuk transfer file, digunakan **length prefix** (4-byte big-endian header) sebagai framing server kirim ukuran file terlebih dahulu, lalu client baca sejumlah byte tersebut, sehingga data antar pesan tidak tercampur.
