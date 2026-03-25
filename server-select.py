@@ -1,6 +1,7 @@
 import socket
 import select
 import os
+import struct
 
 HOST = "0.0.0.0"
 PORT = 6969
@@ -16,14 +17,13 @@ print(f"[*] Select server on {HOST}:{PORT}")
 sockets = [server]
 
 
-
 while True:
     read_ready = select.select(sockets, [], [])[0]
 
     for conn in read_ready:
         if conn == server:
-            conn, addr = server.accept()
-            sockets.append(conn)
+            client, addr = server.accept()
+            sockets.append(client)
             print(f"[+] Connected: {addr}")
 
         else:
@@ -44,15 +44,18 @@ while True:
                 elif data.startswith("/upload"):
                     filename = data.split()[1]
                     conn.sendall(b"READY")
-                    size = int(conn.recv(1024).decode())
+                    header = b""
+                    while len(header) < 4:
+                        header += conn.recv(4 - len(header))
+                    size = struct.unpack(">I", header)[0]
                     file_data = b""
                     while len(file_data) < size:
-                        file_data += conn.recv(4096)
+                        file_data += conn.recv(min(4096, size - len(file_data)))
                     with open(os.path.join(FILES_DIR, filename), "wb") as f:
                         f.write(file_data)
                     conn.sendall(b"OK")
                     print(f"[+] Uploaded: {filename}")
-                    broadcast_msg = f"[SERVER] {addr[0]} uploaded file: {filename}"
+                    broadcast_msg = f"\n[PEMBERITAHUAN] File baru tersedia: '{filename}' (diupload oleh {conn.getpeername()[0]})\n"
                     for s in sockets:
                         if s != server and s != conn:
                             try:
@@ -64,13 +67,12 @@ while True:
                     filename = data.split()[1]
                     filepath = os.path.join(FILES_DIR, filename)
                     if not os.path.exists(filepath):
-                        conn.sendall(b"ERROR")
+                        conn.sendall(struct.pack(">I", 0))
                     else:
-                        size = os.path.getsize(filepath)
-                        conn.sendall(str(size).encode())
-                        conn.recv(1024)
                         with open(filepath, "rb") as f:
-                            conn.sendfile(f)
+                            file_data = f.read()
+                        conn.sendall(struct.pack(">I", len(file_data)))
+                        conn.sendall(file_data)
                         print(f"[+] Downloaded: {filename}")
 
             except Exception as e:
