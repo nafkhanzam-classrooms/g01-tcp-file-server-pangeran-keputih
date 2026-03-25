@@ -5,7 +5,7 @@
 | Nama           | NRP        | Kelas     |
 | ---            | ---        | ----------|
 | Christian Mikaxelo               |    5025241178        |   C        |
-|                |            |           |
+| Ahmad Loka Arziki               |   5025241044         |    C       |
 
 ## Link Youtube (Unlisted)
 Link ditaruh di bawah ini
@@ -30,6 +30,22 @@ Server non-blocking menggunakan I/O multiplexing bisa melayani banyak client sek
 - `server.accept()` dipanggil hanya ketika `select` mendeteksi koneksi client baru
 - `conn.recv()` dipanggil hanya ketika `select` mendeteksi data masuk
 - setelah upload berhasil, server iterasi semua socket aktif dan kirim notifikasi ke semua client lain
+
+
+### server-poll.py
+Implementasi I/O multiplexing menggunakan syscall `poll` untuk memantau banyak socket sekaligus dalam satu thread.
+- `select.poll()` membuat objek poller yang bertugas mengelola daftar file descriptor (FD) yang akan dipantau statusnya.
+- `poll_obj.poll()` mengambil daftar FD yang sedang aktif atau memiliki data masuk (event POLLIN) untuk segera diproses.
+- `fd_map` memetakan ID angka dari file descriptor kembali ke objek socket-nya supaya fungsi `recv()` bisa dijalankan pada socket yang tepat.
+- `poll_obj.register()` mendaftarkan socket client yang baru terhubung ke dalam daftar pantauan poller secara dinamis tanpa menghentikan perulangan utama.
+
+
+### server-thread.py
+Server multi-threaded yang menjalankan satu thread khusus untuk melayani setiap client yang terhubung secara paralel.
+- `threading.Thread()` membuat jalur eksekusi mandiri untuk setiap client sehingga proses komunikasi dan transfer file tidak perlu mengantri.
+- `clients_lock` (Lock) menjaga konsistensi data saat server melakukan iterasi pada list `clients` untuk broadcast agar tidak terjadi *race condition*.
+- `handle_client()` menjalankan seluruh logika perintah (`/list`, `/upload`, `/download`) secara terisolasi di dalam masing-masing thread pekerja.
+- Thread utama hanya fokus pada fungsi `accept()` untuk menerima koneksi baru, sementara thread pekerja menangani seluruh beban kerja komunikasi secara independen.
 
 ## Screenshot Hasil
 
