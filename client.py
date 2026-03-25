@@ -57,9 +57,6 @@ while True:
                 f.write(file_data)
             print(f"[+] Downloaded '{filename}' -> downloads/{filename}")
 
-    elif cmd == "/quit":
-        break
-
     else:
         print("Unknown command")
 
