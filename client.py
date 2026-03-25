@@ -1,13 +1,29 @@
 import socket
+import threading
 import os
 
 HOST = "127.0.0.1"
 PORT = 6969
 os.makedirs("downloads", exist_ok=True)
 
+
+def receive_broadcasts(sock):
+    while True:
+        try:
+            msg = sock.recv(1024).decode().strip()
+            if msg:
+                print(f"\n{msg}")
+                print(">>> ", end="", flush=True)
+        except:
+            break
+
+
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 print(f"[+] Connected to {HOST}:{PORT}")
+
+t = threading.Thread(target=receive_broadcasts, args=(sock,), daemon=True)
+t.start()
 
 while True:
     cmd = input(">>> ").strip()
@@ -56,6 +72,9 @@ while True:
             with open(os.path.join("downloads", filename), "wb") as f:
                 f.write(file_data)
             print(f"[+] Downloaded '{filename}' -> downloads/{filename}")
+
+    elif cmd == "/quit":
+        break
 
     else:
         print("Unknown command")

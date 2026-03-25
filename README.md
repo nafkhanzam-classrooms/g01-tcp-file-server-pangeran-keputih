@@ -4,7 +4,7 @@
 ## Anggota Kelompok
 | Nama           | NRP        | Kelas     |
 | ---            | ---        | ----------|
-|                |            |           |
+| Christian Mikaxelo               |    5025241178        |   C        |
 |                |            |           |
 
 ## Link Youtube (Unlisted)
@@ -15,4 +15,32 @@ Link ditaruh di bawah ini
 
 ## Penjelasan Program
 
+### server-sync.py
+Server synchronous (blocking) hanya melayani satu client dalam satu waktu.
+- `socket.listen(1)` hanya antri 1 koneksi
+- `accept()` blocking, menunggu client masuk
+- `conn.recv()` blocking, menunggu data dari client
+- `handle_client()` memproses semua command client hingga disconnect, baru terima client berikutnya
+
+
+### server-select.py
+Server non-blocking menggunakan I/O multiplexing bisa melayani banyak client sekaligus dalam satu thread.
+- `select.select(sockets, [], [])` untuk cek semua socket, return yang sudah ready
+- `sockets` list berisi server socket dan semua client socket yang aktif
+- `server.accept()` dipanggil hanya ketika `select` mendeteksi koneksi client baru
+- `conn.recv()` dipanggil hanya ketika `select` mendeteksi data masuk
+- setelah upload berhasil, server iterasi semua socket aktif dan kirim notifikasi ke semua client lain
+
 ## Screenshot Hasil
+
+### Server Sync
+![sync](/assets/sync.png)
+
+dari test berikut dapat dilihat bahwa server hanya memberikan response kepada 1 client saja, sementara client yang mencoba connect, tidak bisa karena blocking dari server. Bahkan mencoba /list saja tidak bisa. Dengan ini, maka sesuai dengan implementasi sync yaitu blocking
+
+### Server Select
+![select](/assets/selectNew.png)
+
+dari test berikut dapat dilihat bahwa client 1 dan 2 dapat connect ke server dan setiap requestnya dapat diproses secara synchronous. Namun, delay nya tidak terasa karena request yang dilakukan sederhana dan terjadi di local sehingga sangat cepat.
+
+Dapat dilihat juga server broadcast bahwa client telah meng-upload sebuah file. Namun disini tidak menggunakan threading sehingga broadcast diterima setelah command selanjutnya dari client 1. Hal ini karena jika menggunakan threading di client akan terjadi race condition yang dimana 2 thread di 1 socket yang ujungnya akan deadlock
