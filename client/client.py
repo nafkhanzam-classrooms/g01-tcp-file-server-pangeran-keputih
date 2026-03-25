@@ -3,6 +3,7 @@ import threading
 import os
 import struct
 import select as _select
+import sys
 
 HOST = "127.0.0.1"
 PORT = 6969
@@ -28,8 +29,14 @@ def receive_broadcasts(sock):
 
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((HOST, PORT))
-print(f"[+] Connected to {HOST}:{PORT}")
+try:
+    sock.connect((HOST, PORT))
+    print(f"[+] Connected to {HOST}:{PORT}")
+except (ConnectionRefusedError, socket.timeout) as e:
+    print(f"[!] Connection error: {e}")
+    sys.exit(1)
+
+
 
 t = threading.Thread(target=receive_broadcasts, args=(sock,), daemon=True)
 t.start()
