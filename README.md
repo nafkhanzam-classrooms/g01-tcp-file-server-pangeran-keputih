@@ -62,3 +62,15 @@ dari test berikut dapat dilihat bahwa client 1 dan 2 dapat connect ke server dan
 Dapat dilihat juga server broadcast ke semua client lain ketika ada file yang di-upload. Client menggunakan background thread untuk menerima broadcast, namun untuk menghindari race condition, digunakan `threading.Event` (`command_active`) broadcast thread di-pause saat main thread sedang mengeksekusi command, lalu diaktifkan kembali setelah selesai.
 
 Untuk transfer file, digunakan **length prefix** (4-byte big-endian header) sebagai framing server kirim ukuran file terlebih dahulu, lalu client baca sejumlah byte tersebut, sehingga data antar pesan tidak tercampur.
+
+### Server Poll
+
+Berdasarkan gambar, `server-poll.py` terbukti bisa melayani beberapa client secara bersamaan tanpa terjadi *blocking*. Hal ini terlihat dari adanya dua client yang terhubung (`127.0.0.1:51700` dan `34950`) di mana keduanya bisa mengirim perintah `/list` dan `/upload` secara bergantian tanpa harus menunggu salah satu terputus.
+
+Selain itu, mekanisme **broadcasting** berhasil dijalankan dengan sukses. Begitu client pertama selesai mengunggah file `test2.txt`, server langsung mengirimkan pesan pemberitahuan otomatis ke client kedua (seperti yang terlihat pada terminal client di bagian bawah). Karena menggunakan I/O multiplexing, semua aktivitas ini terjadi dalam satu proses utama yang efisien.
+
+### Server Thread
+
+Pada versi thread, gambar menunjukkan bahwa server mampu menangani koneksi paralel dengan membuat jalur eksekusi terpisah untuk setiap client. Terlihat pada terminal server bahwa dua client (`42570` dan `42582`) dapat terhubung dan berinteraksi secara mandiri tanpa saling mengganggu.
+
+Proses **broadcasting** juga berjalan lancar; saat client pertama berhasil melakukan upload, client kedua langsung menerima pesan "[PEMBERITAHUAN] File baru tersedia". Server tetap bisa melayani permintaan dari client lain meskipun ada aktivitas upload yang sedang berlangsung karena setiap client sudah ditangani oleh thread masing-masing.
