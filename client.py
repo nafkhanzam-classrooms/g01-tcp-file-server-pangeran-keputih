@@ -21,7 +21,6 @@ def receive_broadcasts(sock):
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 print(f"[+] Connected to {HOST}:{PORT}")
-print("Commands: /list  /upload <file>  /download <file>  /quit")
 
 t = threading.Thread(target=receive_broadcasts, args=(sock,), daemon=True)
 t.start()
